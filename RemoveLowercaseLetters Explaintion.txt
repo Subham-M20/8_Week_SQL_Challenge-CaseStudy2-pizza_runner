@@ -1,0 +1,107 @@
+Certainly! Let's break down the RemoveLowercaseLetters function line by line to understand its logic and operation:
+Function Definition
+
+sql
+
+CREATE FUNCTION dbo.RemoveLowercaseLetters (@input NVARCHAR(MAX))
+RETURNS NVARCHAR(MAX)
+
+    CREATE FUNCTION dbo.RemoveLowercaseLetters: This statement defines a new user-defined function named RemoveLowercaseLetters in the dbo schema.
+    (@input NVARCHAR(MAX)): This specifies that the function takes a single input parameter, @input, which is of type NVARCHAR(MAX).
+    RETURNS NVARCHAR(MAX): This specifies that the function returns a value of type NVARCHAR(MAX).
+
+Begin Block
+
+sql
+
+AS
+BEGIN
+
+    AS BEGIN: This marks the start of the function's body.
+
+Variable Declarations
+
+sql
+
+DECLARE @position INT = 1;
+DECLARE @output NVARCHAR(MAX) = @input;
+DECLARE @char NCHAR(1);
+
+    DECLARE @position INT = 1: Declares an integer variable @position and initializes it to 1. This variable will be used to track the current position in the string.
+    DECLARE @output NVARCHAR(MAX) = @input: Declares an NVARCHAR(MAX) variable @output and initializes it with the value of @input. This will be the modified output string.
+    DECLARE @char NCHAR(1): Declares an NCHAR(1) variable @char to store a single character from the string during iteration.
+
+While Loop
+
+sql
+
+WHILE @position <= LEN(@output)
+
+    WHILE @position <= LEN(@output): This loop runs as long as @position is less than or equal to the length of the @output string. This ensures that every character in the string is processed.
+
+Extract Character
+
+sql
+
+BEGIN
+    SET @char = SUBSTRING(@output, @position, 1);
+
+    SET @char = SUBSTRING(@output, @position, 1): Extracts the character at the current position from @output and assigns it to @char.
+
+Check and Remove Lowercase Letters
+
+sql
+
+    IF @char LIKE '[a-z]'
+    BEGIN
+        SET @output = STUFF(@output, @position, 1, '');
+    END
+
+    IF @char LIKE '[a-z]': Checks if the character stored in @char is a lowercase letter.
+    BEGIN ... SET @output = STUFF(@output, @position, 1, ''): If @char is a lowercase letter, the STUFF function removes this character from @output at the current position. The STUFF function takes four arguments:
+        The string to modify (@output).
+        The position at which to start removing characters (@position).
+        The number of characters to remove (1).
+        The string to insert (an empty string, '').
+
+Move to Next Character
+
+sql
+
+    ELSE
+    BEGIN
+        SET @position = @position + 1;
+    END
+END
+
+    ELSE ... SET @position = @position + 1: If @char is not a lowercase letter, the function increments @position to move to the next character in the string.
+    END: Ends the ELSE block.
+    END: Ends the WHILE loop.
+
+Return Modified String
+
+sql
+
+RETURN @output;
+END;
+
+    RETURN @output: Returns the modified string @output, which has had all lowercase letters removed.
+    END: Marks the end of the function's body.
+
+Summary
+
+The RemoveLowercaseLetters function iteratively checks each character in the input string and removes any lowercase alphabetic characters. It uses a WHILE loop to process each character and the STUFF function to remove unwanted characters. The function returns the cleaned-up string, which can be used in SQL queries to sanitize input data.
+
+Here's a usage example within a query:
+
+sql
+
+SELECT 
+    CASE
+        WHEN distance = 'null' THEN NULL
+        ELSE dbo.RemoveLowercaseLetters(distance)
+    END AS distance_km
+FROM 
+    distances;
+
+This query processes the distance column, removing any lowercase letters from its values and handling the case where the value is the string 'null' by converting it to NULL.

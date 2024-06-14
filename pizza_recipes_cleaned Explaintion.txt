@@ -1,0 +1,81 @@
+To convert a table from a format where toppings are concatenated in a single string per pizza into a format where each topping is on a separate row, you can use a combination of string functions and a recursive common table expression (CTE) in SQL Server.
+Example Table
+
+Assume you have a table named PizzaToppingsConcatenated with the following data:
+pizza_id	toppings
+1	1, 2, 3, 4, 5, 6, 8, 10
+2	4, 6, 7, 9, 11, 12
+Desired Output
+
+You want to transform it into:
+pizza_id	topping
+1	1
+1	2
+1	3
+1	4
+1	5
+1	6
+1	8
+1	10
+2	4
+2	6
+2	7
+2	9
+2	11
+2	12
+SQL Query
+
+You can achieve this transformation using a recursive CTE to split the concatenated string into individual rows. Here is the query:
+
+sql
+
+WITH ToppingCTE AS (
+    SELECT 
+        pizza_id,
+        CAST(SUBSTRING(toppings + ',', 1, CHARINDEX(',', toppings + ',') - 1) AS INT) AS topping,
+        CAST(SUBSTRING(toppings + ',', CHARINDEX(',', toppings + ',') + 1, LEN(toppings)) AS NVARCHAR(MAX)) AS remaining_toppings
+    FROM 
+        PizzaToppingsConcatenated
+    UNION ALL
+    SELECT 
+        pizza_id,
+        CAST(SUBSTRING(remaining_toppings, 1, CHARINDEX(',', remaining_toppings) - 1) AS INT),
+        CAST(SUBSTRING(remaining_toppings, CHARINDEX(',', remaining_toppings) + 1, LEN(remaining_toppings)) AS NVARCHAR(MAX))
+    FROM 
+        ToppingCTE
+    WHERE 
+        LEN(remaining_toppings) > 0
+)
+SELECT 
+    pizza_id, 
+    topping
+FROM 
+    ToppingCTE
+ORDER BY 
+    pizza_id, topping;
+
+Explanation:
+
+    Initial CTE Query:
+        SELECT pizza_id, CAST(SUBSTRING(toppings + ',', 1, CHARINDEX(',', toppings + ',') - 1) AS INT) AS topping:
+            Extracts the first topping from the toppings string.
+            SUBSTRING(toppings + ',', 1, CHARINDEX(',', toppings + ',') - 1) gets the substring up to the first comma.
+            CAST(... AS INT) converts the substring to an integer.
+        CAST(SUBSTRING(toppings + ',', CHARINDEX(',', toppings + ',') + 1, LEN(toppings)) AS NVARCHAR(MAX)) AS remaining_toppings:
+            Extracts the remaining toppings after the first comma.
+            SUBSTRING(toppings + ',', CHARINDEX(',', toppings + ',') + 1, LEN(toppings)) gets the substring starting from the character after the first comma.
+
+    Recursive CTE Query:
+        The UNION ALL combines the initial CTE query with the recursive part.
+        SELECT pizza_id, CAST(SUBSTRING(remaining_toppings, 1, CHARINDEX(',', remaining_toppings) - 1) AS INT):
+            Extracts the next topping from remaining_toppings.
+        CAST(SUBSTRING(remaining_toppings, CHARINDEX(',', remaining_toppings) + 1, LEN(remaining_toppings)) AS NVARCHAR(MAX)):
+            Updates remaining_toppings to remove the extracted topping.
+
+    Base Case Termination:
+        WHERE LEN(remaining_toppings) > 0: Ensures the recursion stops when there are no more toppings left to process.
+
+    Final Select Statement:
+        SELECT pizza_id, topping FROM ToppingCTE ORDER BY pizza_id, topping: Selects and orders the final results by pizza_id and topping.
+
+This query will transform the concatenated toppings into individual rows, matching the desired output format.
